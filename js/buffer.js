@@ -1,51 +1,53 @@
-(function() {
-function Buffer(opts) {
-    /*
-      FIFO queue type that lets you check when able to consume the
-      right amount of data.
+const MAX_BUFFER_SIZE = 104857600;
 
-     */
-    this.opts = opts;
-    this.max_buffer_size = 104857600;
-    this._size = 0;
-    this.deque = [];
-}
+/**
+ * FIFO queue type that lets you check when able to consume the
+ * right amount of data.
+ */
+class Buffer {
+    constructor(opts) {
+        this.opts = opts;
+        this.max_buffer_size = 104857600;
+        this._size = 0;
+        this.deque = [];
+    }
 
-Buffer.prototype = {
-    clear: function() {
+    clear() {
         this.deque = [];
         this._size = 0;
-    },
-    flatten: function() {
+    }
+
+    flatten() {
         if (this.deque.length == 1) { return this.deque[0]; }
         // flattens the buffer deque to one element
-        var totalSz = 0;
-        for (var i=0; i<this.deque.length; i++) {
-            totalSz += this.deque[i].byteLength;
-        }
+        var totalSz = this.deque.reduce((acc,val) => acc + val.byteLength,0);
+        
         var arr = new Uint8Array(totalSz);
         var idx = 0;
-        for (var i=0; i<this.deque.length; i++) {
+        for (i=0; i<this.deque.length; i++) {
             arr.set(new Uint8Array(this.deque[i]), idx);
             idx += this.deque[i].byteLength;
         }
         this.deque = [arr.buffer];
         return arr.buffer;
-    },
-    add: function(data) {
+    }
+
+    add(data) {
         console.assert(data instanceof ArrayBuffer);
 		//console.assert(data.byteLength > 0)
         this._size = this._size + data.byteLength;
         this.deque.push(data);
-    },
-    consume_any_max: function(maxsz) {
+    }
+
+    consume_any_max(maxsz) {
         if (this.size() <= maxsz) {
             return this.consume(this.size());
         } else {
             return this.consume(maxsz);
         }
-    },
-    consume: function(sz,putback) {
+    }
+
+    consume(sz,putback) {
         // returns a single array buffer of size sz
         if (sz > this._size) {
             console.assert(false);
@@ -92,12 +94,12 @@ Buffer.prototype = {
             this._size -= sz;
         }
         return ret.buffer;
-    },
-    size: function() {
+    }
+
+    size() {
         return this._size;
     }
-};
-
+}
 
 function test_buffer() {
     var b = new Buffer();
@@ -179,5 +181,3 @@ if (false) {
     test_buffer3();
     test_buffer4();
 }
-WSC.Buffer = Buffer;
-})();
