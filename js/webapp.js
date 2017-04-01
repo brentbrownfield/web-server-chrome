@@ -1,6 +1,30 @@
 (function(){
     var sockets = chrome.sockets
+    
+    class PathAuthenticator {
+        constructor(pattern = ".*", user = 'admin', pass = 'admin') {
+            this.pattern = new RegExp(pattern)
+            this.user = user
+            this.pass = pass
+        }
 
+        isValidForPath(path) {
+            return path && path.match(this.pattern)
+        }
+
+        authenticate({headers : {authorizations : authorizations = "boo"}} = {headers: {}}) {
+            var [type,token] = authorizations.split(' ')
+            
+            // Only validate auth if basic auth was attempted
+            // and a token (username and password) is provided
+            if (token && type && type.toLowerCase() == 'basic') {
+                var [user,pass] = atob(token).split(':')
+                return user == this.user && pass == this.pass
+            }
+            return false
+        }
+    }
+    
     function WebApplication(opts) {
         // need to support creating multiple WebApplication...
         if (WSC.DEBUG) {
@@ -104,7 +128,7 @@
         on_entry: function(entry) {
             var fs = new WSC.FileSystem(entry)
             this.fs = fs
-            this.add_handler(['.*',WSC.DirectoryEntryHandler.bind(null, fs)])
+            this.add_handler(new HandlerMatcher('.*',WSC.DirectoryEntryHandler.bind(null, fs)))
             this.init_handlers()
             if (WSC.DEBUG) {
                 //console.log('setup handler for entry',entry)
@@ -126,14 +150,6 @@
         },
         add_handler: function(handler) {
             this.handlers.push(handler)
-        },
-        init_handlers: function() {
-            this.handlersMatch = []
-            for (var i=0; i<this.handlers.length; i++) {
-                var repat = this.handlers[i][0]
-                this.handlersMatch.push( [new RegExp(repat), this.handlers[i][1]] )
-            }
-            this.change()
         },
         change: function() {
             if (this.on_status_change) { this.on_status_change() }
@@ -484,29 +500,19 @@
         onRequest: function(stream, connection, request) {
             console.log('Request',request.method, request.uri)
 
-            if (this.opts.auth) {
-                var validAuth = false
-                var auth = request.headers['authorization']
-                if (auth) {
-                    if (auth.slice(0,6).toLowerCase() == 'basic ') {
-                        var userpass = atob(auth.slice(6,auth.length)).split(':')
-                        if (userpass[0] == this.opts.auth.username &&
-                            userpass[1] == this.opts.auth.password) {
-                            validAuth = true
-                        }
-                    }
-                }
+            // Find an PathAuthenticator for the request path
+            let pathAuthenticator = this.opts.auth.find((ap) => ap.isValidForPath(request.uri));
 
-                if (! validAuth) {
-                    var handler = new WSC.BaseHandler(request)
-                    
-                    handler.app = this
-                    handler.request = request
-                    handler.setHeader("WWW-Authenticate", "Basic")
-                    handler.write("", 401)
-                    handler.finish()
-                    return
-                }
+            // Only attempt auth if a PathAuthenticator was found
+            if (pathAuthenticator && !pathAuthenticator.authenticate(request)) {
+                var handler = new WSC.BaseHandler(request)
+                
+                handler.app = this
+                handler.request = request
+                handler.setHeader("WWW-Authenticate", "Basic")
+                handler.write("", 401)
+                handler.finish()
+                return
             }
 
             if (this.opts.optModRewriteEnable) {
@@ -731,6 +737,7 @@ Changes with nginx 0.7.9                                         12 Aug 2008
         }
     })
 
+    WSC.PathAuthenticator = PathAuthenticator
     WSC.FileSystem = FileSystem
     WSC.BaseHandler = BaseHandler
     WSC.WebApplication = WebApplication
