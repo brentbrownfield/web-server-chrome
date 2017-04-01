@@ -14,7 +14,7 @@
     "url": "https://github.com/brentbrownfield/web-server-chrome.git"
   },
   "author": "",
-  "license": "ISC",
+  "license": "MIT",
   "bugs": {
     "url": "https://github.com/brentbrownfield/web-server-chrome/issues"
   },
@@ -29,5 +29,9 @@
     "gulp-minify": "0.0.15",
     "gulp-uglify": "^2.1.2",
     "jshint": "^2.9.4"
+  },
+  "dependencies": {
+    "text-encoding": "^0.6.4",
+    "underscore": "^1.8.3"
   }
 }
