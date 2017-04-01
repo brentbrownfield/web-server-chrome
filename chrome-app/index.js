@@ -1,7 +1,8 @@
-window.reload = chrome.runtime.reload
+/* jshint maxerr: 100 */
+window.reload = chrome.runtime.reload;
 
 function addinterfaces() {
-    var version = getchromeversion()
+    var version = getchromeversion();
     if (version >= 44) {
         chrome.system.network.getNetworkInterfaces( function(result) {
             if (result) {
@@ -13,7 +14,7 @@ function addinterfaces() {
                     while (contLocal.firstChild) {
                         contLocal.removeChild(contLocal.firstChild);
                     }                
-                    var a = document.createElement('a')
+                    var a = document.createElement('a');
                     a.target = "_blank";
                     var href = 'http://127.0.0.1:' + wport;
                     a.innerText = href;
@@ -24,16 +25,16 @@ function addinterfaces() {
                   console.log("not contLocal!");
                 }
                 
-                var cont = document.getElementById('other-interfaces')
+                var cont = document.getElementById('other-interfaces');
                 if (typeof cont !== 'undefined') {
                     while (cont.firstChild) {
                         cont.removeChild(cont.firstChild);
                     }                
                 
                     for (var i=0; i<result.length; i++) {
-                        console.log('network interface:',result[i])
+                        console.log('network interface:',result[i]);
                         if (result[i].prefixLength == 24) {
-                            var a = document.createElement('a')
+                            var a = document.createElement('a');
                             a.target = "_blank";
                             var href = 'http://' + result[i].address + ':' + wport;
                             a.innerText = href;
@@ -45,38 +46,38 @@ function addinterfaces() {
                   console.log("not cont!");
                 }
             }
-        })
+        });
     }
 }
 
 
 chrome.runtime.getBackgroundPage( function(bg) {
-    console.log('got bg page')
+    console.log('got bg page');
     window.bg = bg;
     
-    document.getElementById('status').innerText = 'OK'
+    document.getElementById('status').innerText = 'OK';
 
-    addinterfaces()
+    addinterfaces();
 
     function choosefolder() {
-        chrome.fileSystem.chooseEntry({type:'openDirectory'}, onchoosefolder)
+        chrome.fileSystem.chooseEntry({type:'openDirectory'}, onchoosefolder);
     }
 
     function onchoosefolder(entry) {
         if (entry) {
-            window.entry = entry
-            bg.entry = entry
-            bg.haveentry(entry)
-            var retainstr = chrome.fileSystem.retainEntry(entry)
-            var d = {'retainstr':retainstr}
-            chrome.storage.local.set(d)
-            document.getElementById('curfolder').innerText = d['retainstr']
-            document.getElementById('status').innerText = 'OK'
-            console.log('set retainstr!')
+            window.entry = entry;
+            bg.entry = entry;
+            bg.haveentry(entry);
+            var retainstr = chrome.fileSystem.retainEntry(entry);
+            var d = {'retainstr':retainstr};
+            chrome.storage.local.set(d);
+            document.getElementById('curfolder').innerText = d.retainstr;
+            document.getElementById('status').innerText = 'OK';
+            console.log('set retainstr!');
         }
     }
 
-    document.getElementById('choose-folder').addEventListener('click', choosefolder)
+    document.getElementById('choose-folder').addEventListener('click', choosefolder);
 
     function onRestart() {
         var input = document.getElementById('choose-port');
@@ -84,32 +85,32 @@ chrome.runtime.getBackgroundPage( function(bg) {
     
         var wport = input.value;
         console.log("port found: " + wport);
-        addinterfaces()
+        addinterfaces();
         if (bg) {
             bg.restart(parseInt(wport));
         }
     }
 
-    document.getElementById('restart').addEventListener('click', onRestart)
+    document.getElementById('restart').addEventListener('click', onRestart);
 
 
 
     chrome.storage.local.get('retainstr',function(d) {
-        if (d['retainstr']) {
-            chrome.fileSystem.restoreEntry(d['retainstr'], function(entry) {
+        if (d.retainstr) {
+            chrome.fileSystem.restoreEntry(d.retainstr, function(entry) {
                 if (entry) {
-                    window.entry = entry
-                    bg.entry = entry
-                    bg.haveentry(entry)
+                    window.entry = entry;
+                    bg.entry = entry;
+                    bg.haveentry(entry);
                 } else {
-                    document.getElementById('status').innerText = 'DIRECTORY MISSING. CHOOSE AGAIN.'                    
+                    document.getElementById('status').innerText = 'DIRECTORY MISSING. CHOOSE AGAIN.';                    
                 }
-            })
-            document.getElementById('curfolder').innerText = d['retainstr']
+            });
+            document.getElementById('curfolder').innerText = d.retainstr;
         }
-    })
+    });
 
 
 
 
-})
+});
